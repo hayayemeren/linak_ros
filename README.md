@@ -9,9 +9,12 @@ source install/setup.bash
 ros2 launch linak_ros servers.launch.py
 
 # Note: Change 'desk1' to match whichever desk you are testing
-ros2 topic echo /desk1/current_height
+ros2 topic echo /island1/current_height
 
-ros2 topic echo /desk1/is_moving
+ros2 topic echo /island1/is_moving
 
 # Sends a target height in millimeters (e.g., 800 mm)
-ros2 topic pub /desk1/set_height std_msgs/msg/Int32 "{data: 800}" -1
+ros2 topic pub /island1/set_height std_msgs/msg/Int32 "{data: 800}" -1
+
+# Calibration data send
+ros2 topic pub --once /island1/set_current_height std_msgs/msg/Int32 "{data: 610}"

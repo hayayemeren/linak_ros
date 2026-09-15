@@ -27,12 +27,19 @@ class SmartDeskDriver(Node):
         self.height_pub = self.create_publisher(Int32, 'current_height', 10)
         self.moving_pub = self.create_publisher(Bool, 'is_moving', 10)
 
+        # Triggers motor movement
         self.subscription = self.create_subscription(
             Int32, 'set_height', self.command_callback, 10
+        )
+        
+        # Calibrates the height reading without moving the desk
+        self.calibration_sub = self.create_subscription(
+            Int32, 'set_current_height', self.calibration_callback, 10
         )
 
         self.target_height = None
         self.current_height_mm = 0
+        self.last_raw_height = 0
         self.is_moving = False
         self.move_task = None  # To track the background move task
         
@@ -79,6 +86,8 @@ class SmartDeskDriver(Node):
                             # Parse Height
                             raw_height = data.height if hasattr(data, 'height') else (data[0] if isinstance(data, tuple) else data)
                             h_int = int(raw_height.value) if hasattr(raw_height, 'value') else int(raw_height)
+                            
+                            self.last_raw_height = h_int
                             self.current_height_mm = int((h_int * self.SCALE_FACTOR) + self.OFFSET_MM)
 
                             # Parse Speed
@@ -89,9 +98,6 @@ class SmartDeskDriver(Node):
                                 raw_speed = data[1]
                             
                             s_int = int(raw_speed.value) if hasattr(raw_speed, 'value') else int(raw_speed)
-                            
-                            # DEBUG: Uncomment this if you suspect speed is always 0
-                            # self.get_logger().info(f"Raw Speed: {s_int}")
 
                             # 2. UPDATE STATUS
                             self.is_moving = (s_int != 0)
@@ -129,6 +135,11 @@ class SmartDeskDriver(Node):
     def command_callback(self, msg):
         self.target_height = msg.data
         self.get_logger().info(f"Received Command: {self.target_height}")
+
+    def calibration_callback(self, msg):
+        actual_height = msg.data
+        self.OFFSET_MM = actual_height - int(self.last_raw_height * self.SCALE_FACTOR)
+        self.get_logger().info(f"Position calibrated to {actual_height}mm. Motor not moved.")
 
 def main(args=None):
     rclpy.init(args=args)
