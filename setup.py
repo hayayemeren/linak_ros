@@ -28,6 +28,8 @@ setup(
     entry_points={
         'console_scripts': [
             'smart_desk = linak_ros.smart_desk:main',
+            'wave_runner = linak_ros.wave_runner:main',
+            'reset_desks = linak_ros.reset_desks:main',
         ],
     },
 )

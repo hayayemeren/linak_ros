@@ -18,3 +18,9 @@ ros2 topic pub /island1/set_height std_msgs/msg/Int32 "{data: 800}" -1
 
 # Calibration data send
 ros2 topic pub --once /island1/set_current_height std_msgs/msg/Int32 "{data: 610}"
+
+# Wave runner
+ros2 run linak_ros wave_runner
+
+# Reset Desks
+ros2 run linak_ros reset_desks

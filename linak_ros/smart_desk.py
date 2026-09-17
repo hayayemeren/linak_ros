@@ -117,7 +117,6 @@ class SmartDeskDriver(Node):
                                         target_raw = int((self.target_height - self.OFFSET_MM) / self.SCALE_FACTOR)
                                         cmd = HeightCommand(target_raw)
                                         
-                                        # CRITICAL FIX: Run move_to in background!
                                         self.move_task = asyncio.create_task(desk.move_to(cmd))
                                 else:
                                     self.target_height = None
@@ -133,13 +132,23 @@ class SmartDeskDriver(Node):
                 await asyncio.sleep(5.0)
 
     def command_callback(self, msg):
-        self.target_height = msg.data
-        self.get_logger().info(f"Received Command: {self.target_height}")
+        requested_height = msg.data
+        
+        # HARDWARE SAFETY LOCK: Enforce the server-defined offset as the minimum limit
+        if requested_height < self.OFFSET_MM:
+            self.get_logger().warn(
+                f"Command ({requested_height}mm) is below desk limit! Clamping to offset value: {self.OFFSET_MM}mm."
+            )
+            self.target_height = self.OFFSET_MM
+        else:
+            self.target_height = requested_height
+            
+        self.get_logger().info(f"Target Height Set: {self.target_height}")
 
     def calibration_callback(self, msg):
         actual_height = msg.data
         self.OFFSET_MM = actual_height - int(self.last_raw_height * self.SCALE_FACTOR)
-        self.get_logger().info(f"Position calibrated to {actual_height}mm. Motor not moved.")
+        self.get_logger().info(f"Position calibrated. New absolute minimum limit is {self.OFFSET_MM}mm.")
 
 def main(args=None):
     rclpy.init(args=args)
